@@ -1,12 +1,17 @@
 [project]
-name = "id-corruptor-scraper"
+name = "korupnesia"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.10" # TODO: test this in 3.10
+requires-python = ">=3.12"
 dependencies = [
     "beautifulsoup4>=4.12.3",
     "lxml>=5.3.0",
     "requests>=2.32.3",
     "selenium>=4.27.1",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.12.4",
 ]

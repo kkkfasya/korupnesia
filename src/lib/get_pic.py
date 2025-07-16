@@ -1,3 +1,4 @@
+# WARNING: unfinished, will throw error
 # h1 .entry-title nama-hakim untuk nama koruptor
 # .tbl-clean->tbody->tr->td widht='20%' foto koruptor
 # .content-body parse aja nnti datanya di pick lagi
