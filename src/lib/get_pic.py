@@ -1,4 +1,5 @@
 # WARNING: unfinished, will throw error
+# The purpose of this is to get the pic of the corruptor that will be used for making games
 # h1 .entry-title nama-hakim untuk nama koruptor
 # .tbl-clean->tbody->tr->td widht='20%' foto koruptor
 # .content-body parse aja nnti datanya di pick lagi

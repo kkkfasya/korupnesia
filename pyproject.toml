@@ -1,14 +1,15 @@
 [project]
+requires-python = ">=3.12"
 name = "korupnesia"
 version = "0.1.0"
-description = "Add your description here"
+description = "a project filled with koruptor's data from our beloved NKRI, and also some fun games"
 readme = "README.md"
-requires-python = ">=3.12"
 dependencies = [
     "beautifulsoup4>=4.12.3",
     "lxml>=5.3.0",
     "requests>=2.32.3",
-    "result>=0.17.0",
+    "result",
+    "safe-builtins>=0.2.0",
     "selenium>=4.27.1",
 ]
 
@@ -16,3 +17,6 @@ dependencies = [
 dev = [
     "ruff>=0.12.4",
 ]
+
+[tool.uv.sources]
+result = { git = "https://github.com/kkkfasya/result" }
