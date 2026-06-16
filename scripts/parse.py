@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Dict, Optional
 from bs4 import BeautifulSoup
 
-
 def scrape_korupedia_detail(file_path: str | Path) -> Optional[Dict[str, str]]:
     """
     Parses a Korupedia detail HTML page and extracts corruptor data.
@@ -15,9 +14,9 @@ def scrape_korupedia_detail(file_path: str | Path) -> Optional[Dict[str, str]]:
 
     return: A dictionary containing scraped data, or None if scraping fails.
     """
+    soup: BeautifulSoup
     safe_read_text = result.as_result(UnicodeDecodeError)(Path.read_text)
     safe_bs = result.as_result(Exception)(BeautifulSoup)
-    soup: BeautifulSoup
 
     path = Path(file_path)
     if file_path == "" or not path.exists():
@@ -27,7 +26,6 @@ def scrape_korupedia_detail(file_path: str | Path) -> Optional[Dict[str, str]]:
     if not os.access(path, os.R_OK):
         print("error: file is not accessible", file=sys.stderr)
         sys.exit(1)
-
 
     r = safe_read_text(path, encoding="utf-8")
     if r.match_err(UnicodeDecodeError):
