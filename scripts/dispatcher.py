@@ -15,7 +15,7 @@ import traceback
 # absolute path to the project root
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATADIR = Path(f"{PROJECT_ROOT}/data")
-LOGFORMAT = "<level>[{level}]</level> | <green>{time}</green> | {message}"
+LOGFORMAT = "<level>[{level}]</level> | <green>{time}</green> | {module}.py | {function}(...) | {message}"
 LOGSTASH_LOGFILE = Path(f"{PROJECT_ROOT}/logs/dispatcher_serializable.log")
 
 
@@ -70,16 +70,28 @@ if sys._is_gil_enabled():  # ty: ignore
     logger.warning("GIL is enabled, might not get the best performance")
 
 
-def get_data_chunk(dir) -> list[list[Path]]:
-    d = Path(dir)
-    if not d.is_dir():
-        return [[Path("").chmod]]
-
+def _cpu_count() -> int:
     # the fuck do you mean by int | None lol
-    chunk_size = os.cpu_count() // 2  # ty: ignore
+    c = os.cpu_count()
+    if not c:
+        return 0
+
+    return c
+
+
+def get_data_chunk(data_dir, chunk_size: int = _cpu_count()) -> list[list[Path]] | None:
+    if chunk_size == 0:
+        logger.error(
+            "chunk_size cannot be zero, either misinput or program cannot get cpu count"
+        )
+        return None
+
+    d = Path(data_dir)
+    if not d.is_dir():
+        logger.error("data_dir provided is not correct")
+        return None
+
+    cs = chunk_size // 2
     items = list(d.iterdir())
 
-    return [items[i : i + chunk_size] for i in range(0, len(items), chunk_size)]
-
-
-print(get_data_chunk(DATADIR))
+    return [items[i : i + cs] for i in range(0, len(items), cs)]
