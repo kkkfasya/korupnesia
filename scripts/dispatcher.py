@@ -54,6 +54,7 @@ def logstash_sink(message):
 
 
 logger.remove()
+
 # stderr and normal logfile
 logger.add(sys.stderr, format=LOGFORMAT)
 logger.add(
@@ -79,19 +80,41 @@ def _cpu_count() -> int:
     return c
 
 
-def get_data_chunk(data_dir, chunk_size: int = _cpu_count()) -> list[list[Path]] | None:
+def get_data_chunk(data_dir, chunk_size: int | None) -> list[list[Path]] | None:
+    """Splits files inside a directory into smaller sublists (chunks).
+
+    scans the provided directory, retrieves all immediate filesystem entries, and partitions them into batches.
+    The chunk size used for slicing, if not provided, will take machine cpu count and divided by two, otherwise will
+    batch accordingly to the size provided
+
+    Args:
+        data_dir: The path or string path to the directory containing files
+            to partition into chunks.
+        chunk_size: if not provided, will take machine cpu count and be divided by two
+
+    Returns:
+        A nested list of ``Path`` objects where each inner list represents
+        a processing chunk, or ``None`` if validation fails or the directory
+        does not exist.
+    """
+    cs: int
+
     if chunk_size == 0:
         logger.error(
             "chunk_size cannot be zero, either misinput or program cannot get cpu count"
         )
         return None
 
+    if chunk_size is None:
+        cs = _cpu_count() // 2
+    else:
+        cs = chunk_size
+
     d = Path(data_dir)
     if not d.is_dir():
         logger.error("data_dir provided is not correct")
         return None
 
-    cs = chunk_size // 2
     items = list(d.iterdir())
 
     return [items[i : i + cs] for i in range(0, len(items), cs)]
