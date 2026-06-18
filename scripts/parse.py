@@ -70,3 +70,5 @@ def scrape_korupedia_detail(file_path: str | Path) -> Optional[Dict[str, str]]:
 if __name__ == "__main__":
     target_file = sys.argv[1] if len(sys.argv) > 1 else ""
     scrape_korupedia_detail(target_file)
+
+
