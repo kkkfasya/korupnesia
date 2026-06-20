@@ -7,7 +7,9 @@ from loguru import logger
 # absolute path to the project root
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATADIR = Path(f"{PROJECT_ROOT}/data")
-LOGFORMAT = "<level>[{level}]</level>: <green>{time}</green> | {extra[component]} | {message}"
+LOGFORMAT = (
+    "<level>[{level}]</level>: <green>{time}</green> | {extra[component]} | {message}"
+)
 LOGSTASH_LOGFILE = Path(f"{PROJECT_ROOT}/logs/dispatcher_serializable.log")
 _configured = False
 
@@ -64,7 +66,7 @@ def setup_logger(*, level: str = "INFO"):
     )
 
     logger.add(
-        f"{log_dir}/dispatcher.log",
+        f"{log_dir}/app.log",
         level=level,
         rotation="100 MB",
         retention="30 days",
@@ -74,7 +76,7 @@ def setup_logger(*, level: str = "INFO"):
         backtrace=True,
         format=LOGFORMAT,
     )
-    
+
     # BUG:i dont understand this, will configure later on
     # logger.add(
     #     f"{log_dir}/ecs-log.json",
