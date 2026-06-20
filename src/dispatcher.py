@@ -7,6 +7,7 @@ it also logs the infos
 import sys
 import os
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from shared.configured_logger import logger
 from parse import scrape_korupedia_detail
 
@@ -25,7 +26,7 @@ def _cpu_count() -> int:
     return c
 
 
-def get_data_chunk(data_dir, chunk_size: int | None) -> list[list[Path]] | None:
+def get_data_chunk(data_dir, chunk_size: int | None = None) -> list[list[Path]] | None:
     """Splits files inside a directory into smaller sublists (chunks).
 
     scans the provided directory, retrieves all immediate filesystem entries, and partitions them into batches.
@@ -58,6 +59,7 @@ def get_data_chunk(data_dir, chunk_size: int | None) -> list[list[Path]] | None:
     d = Path(data_dir)
     if not d.is_dir():
         logger.error("data_dir provided is not correct")
+        logger.info("try using absolute path")
         return None
 
     items = list(d.iterdir())
@@ -66,20 +68,42 @@ def get_data_chunk(data_dir, chunk_size: int | None) -> list[list[Path]] | None:
 
 
 def _process_batch_worker(batch: list[Path]) -> None:
-    """Processes all items inside a single chunk sequentially
+    """Processes all items inside a single chunk sequentially.
 
     Runs natively in parallel with other batch workers on a GIL-free runtime.
     """
+    worker_logger = logger.bind(
+        worker_size=len(batch),
+    )
+
+    worker_logger.info("Batch worker started")
+
+    success = 0
+    failed = 0
+
     for file_path in batch:
+        file_logger = worker_logger.bind(
+            file=str(file_path),
+        )
+
         try:
             scrape_korupedia_detail(file_path)
+            success += 1
+
         except Exception:
-            # Prevents an unhandled exception in one file from halting
-            # the entire thread execution block.
-            pass
+            failed += 1
+
+            file_logger.exception(
+                "Failed processing file",
+            )
+
+    worker_logger.info(
+        "Batch worker completed",
+        success=success,
+        failed=failed,
+    )
 
 
-#TODO: implement
 def batch_process(data: list[list[Path]]) -> None:
     """Spawns parallel native threads matching the total chunk count.
 
@@ -88,7 +112,58 @@ def batch_process(data: list[list[Path]]) -> None:
             processing chunk mapped directly to a hardware thread execution line.
     """
     if not data:
+        logger.warning("no data batches provided")
         return
-
+    
     num_threads = len(data)
-    ...
+
+    total_files = sum(len(batch) for batch in data)
+
+    # TODO: why is num thread on the log so big? investigate next time
+    log = logger.bind(
+        num_threads=num_threads,
+        total_batches=len(data),
+        total_files=total_files,
+    )
+
+    log.info("starting batch processing")
+
+    completed_workers = 0
+    failed_workers = 0
+
+    with ThreadPoolExecutor(
+        max_workers=num_threads,
+        thread_name_prefix="dispatcher",
+    ) as executor:
+        futures = {
+            executor.submit(
+                _process_batch_worker,
+                batch,
+            ): index
+            for index, batch in enumerate(data, start=1)
+        }
+
+        for future in as_completed(futures):
+            batch_id = futures[future]
+
+            try:
+                future.result()
+                completed_workers += 1
+                logger.bind(
+                    batch_id=batch_id,
+                ).info(
+                    "worker completed",
+                )
+
+            except Exception:
+                logger.bind(
+                    batch_id=batch_id,
+                ).exception(
+                    "worker crashed",
+                )
+
+    log.info(
+        "batch processing finished",
+        completed_workers=completed_workers,
+        failed_workers=failed_workers,
+    )

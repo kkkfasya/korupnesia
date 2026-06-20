@@ -60,7 +60,8 @@ def scrape_korupedia_detail(file_path: str | Path) -> Optional[Dict[str, str]]:
             key = cells[0].get_text().strip().replace(" ", "_").lower()
             value = cells[1].get_text().strip()
             scraped_data[key] = value
-
+    
+    # TODO: disable or pipe to other output
     print("Data scraped successfully:")
     print(json.dumps(scraped_data, indent=2, ensure_ascii=False))
 

@@ -5,10 +5,9 @@ from pathlib import Path
 from loguru import logger
 
 # absolute path to the project root
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-DATADIR = Path(f"{PROJECT_ROOT}/data")
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 LOGFORMAT = (
-    "<level>[{level}]</level>: <green>{time}</green> | {extra[component]} | {message}"
+    "<level>[{level}]</level>: <green>{time}</green> | {extra[component]} | {message}:{extra}"
 )
 LOGSTASH_LOGFILE = Path(f"{PROJECT_ROOT}/logs/dispatcher_serializable.log")
 _configured = False
@@ -54,6 +53,7 @@ def setup_logger(*, level: str = "INFO"):
         return
 
     log_dir = Path(f"{PROJECT_ROOT}/logs")
+    print(log_dir)
     log_dir.mkdir(parents=True, exist_ok=True)
 
     logger.remove()
@@ -76,6 +76,10 @@ def setup_logger(*, level: str = "INFO"):
         backtrace=True,
         format=LOGFORMAT,
     )
+
+    # https://www.dash0.com/guides/python-logging-with-loguru
+    # https://github.com/vklochan/python-logstash
+    # https://medium.com/swlh/python-async-logging-to-an-elk-stack-35498432cb0a
 
     # BUG:i dont understand this, will configure later on
     # logger.add(
