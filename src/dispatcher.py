@@ -8,7 +8,7 @@ import sys
 import os
 from pathlib import Path
 from shared.configured_logger import logger
-from .parse import scrape_korupedia_detail
+from parse import scrape_korupedia_detail
 
 logger = logger.bind(component="dispatcher")
 
