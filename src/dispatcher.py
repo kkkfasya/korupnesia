@@ -10,7 +10,9 @@ import os
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from shared.configured_logger import logger
-from parse import scrape_korupedia_detail
+from parser import parse_korupedia_detail
+from result.result import Result, Err, Ok
+
 
 log = logger.bind(component="dispatcher")
 
@@ -88,16 +90,20 @@ def _process_batch_worker(batch: list[Path]) -> None:
             file=str(file_path),
         )
 
-        try:
-            scrape_korupedia_detail(file_path)
-            success += 1
+        match parse_korupedia_detail(file_path):
+            case Ok(data):
+                success += 1
 
-        except Exception:
-            failed += 1
+            case Err(e):
+                # XXX: should i log here or inside the callee or both?
+                failed += 1
+                continue
 
-            file_logger.exception(
-                "Failed processing file",
-            )
+        file_logger.exception(
+            "Failed processing file",
+        )
+        # TODO: put data in csv
+        # TODO: put data in db
 
     worker_logger.info(
         "Batch worker completed",
@@ -121,7 +127,6 @@ def batch_process(data: list[list[Path]]) -> None:
 
     total_files = sum(len(batch) for batch in data)
 
-    # TODO: why is num thread on the log so big? investigate next time
     log = logger.bind(
         num_threads=num_threads,
         total_batches=len(data),

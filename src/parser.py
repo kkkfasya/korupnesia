@@ -3,10 +3,22 @@ import sys
 import os
 import result
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict
+from shared.configured_logger import logger
 from bs4 import BeautifulSoup
+from dataclasses import dataclass
+from result.result import Result, Err, Ok
 
-def scrape_korupedia_detail(file_path: str | Path) -> Optional[Dict[str, str]]:
+
+@dataclass(frozen=True)
+class ParserError:
+    err_msg: str  # XXX: should i give err msg or err class?
+    err_file: str | Path
+
+
+def parse_korupedia_detail(
+    file_path: str | Path,
+) -> Result[Dict[str, str], ParserError]:
     """
     Parses a Korupedia detail HTML page and extracts corruptor data.
 
@@ -15,22 +27,25 @@ def scrape_korupedia_detail(file_path: str | Path) -> Optional[Dict[str, str]]:
     return: A dictionary containing scraped data, or None if scraping fails.
     """
     soup: BeautifulSoup
+    parser_log = logger.bind(component="parser")
     safe_read_text = result.as_result(UnicodeDecodeError)(Path.read_text)
     safe_bs = result.as_result(Exception)(BeautifulSoup)
 
     path = Path(file_path)
     if file_path == "" or not path.exists():
-        print("error: file does not exist", file=sys.stderr)
-        sys.exit(1)
+        parser_log.error("file does not exists")
+        return Err(ParserError(err_msg="file does not exists", err_file=file_path))
 
     if not os.access(path, os.R_OK):
-        print("error: file is not accessible", file=sys.stderr)
-        sys.exit(1)
+        parser_log.error("file is not accessible")
+        return Err(ParserError(err_msg="file is not accessible", err_file=file_path))
 
     r = safe_read_text(path, encoding="utf-8")
     if r.match_err(UnicodeDecodeError):
-        print("error: failed to decode file to utf-8", file=sys.stderr)
-        sys.exit(1)
+        parser_log.error("failed to decode file to utf-8")
+        return Err(
+            ParserError(err_msg="failed to decode file to utf-8", err_file=file_path)
+        )
 
     html_content = r.unwrap()
 
@@ -60,16 +75,14 @@ def scrape_korupedia_detail(file_path: str | Path) -> Optional[Dict[str, str]]:
             key = cells[0].get_text().strip().replace(" ", "_").lower()
             value = cells[1].get_text().strip()
             scraped_data[key] = value
-    
-    # TODO: disable or pipe to other output
-    print("Data scraped successfully:")
-    print(json.dumps(scraped_data, indent=2, ensure_ascii=False))
 
-    return scraped_data
+    # TODO: disable or pipe to other output
+    parser_log.info(f"{file_path} scraped successfully:")
+    parser_log.info(json.dumps(scraped_data, indent=2, ensure_ascii=False))
+
+    return Ok(scraped_data)
 
 
 if __name__ == "__main__":
     target_file = sys.argv[1] if len(sys.argv) > 1 else ""
-    scrape_korupedia_detail(target_file)
-
-
+    print(parse_korupedia_detail(target_file))
