@@ -1,9 +1,9 @@
 import dispatcher
 from pathlib import Path
 
+
 def main():
     datapath = Path(f"{Path(__file__).parent.parent}/data")
-    print(datapath)
     datachunk = dispatcher.get_data_chunk(datapath)
     if not datachunk:
         return

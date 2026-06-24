@@ -1,3 +1,4 @@
+# TODO: reconfigure logger, i don't think the current one is ideal, though it works
 import traceback
 import sys
 import json
@@ -6,9 +7,7 @@ from loguru import logger
 
 # absolute path to the project root
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-LOGFORMAT = (
-    "<level>[{level}]</level>: <green>{time}</green> | {extra[component]} | {message}:{extra}"
-)
+LOGFORMAT = "<level>[{level}]</level>: <green>{time}</green> | {extra[component]} | {message}:{extra}"
 LOGSTASH_LOGFILE = Path(f"{PROJECT_ROOT}/logs/dispatcher_serializable.log")
 _configured = False
 

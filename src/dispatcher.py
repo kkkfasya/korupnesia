@@ -5,13 +5,14 @@ it also logs the infos
 """
 
 import sys
+import math
 import os
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from shared.configured_logger import logger
 from parse import scrape_korupedia_detail
 
-logger = logger.bind(component="dispatcher")
+log = logger.bind(component="dispatcher")
 
 if sys._is_gil_enabled():  # ty: ignore
     logger.warning("GIL is enabled, might not get the best performance")
@@ -43,26 +44,27 @@ def get_data_chunk(data_dir, chunk_size: int | None = None) -> list[list[Path]] 
         a processing chunk, or ``None`` if validation fails or the directory
         does not exist.
     """
-    cs: int
+    ncpu = _cpu_count()
+    cs = chunk_size if chunk_size else (ncpu // 2)
 
     if chunk_size == 0:
-        logger.error(
+        log.error(
             "chunk_size cannot be zero, either misinput or program cannot get cpu count"
         )
         return None
 
-    if chunk_size is None:
-        cs = _cpu_count() // 2
-    else:
-        cs = chunk_size
-
     d = Path(data_dir)
     if not d.is_dir():
-        logger.error("data_dir provided is not correct")
-        logger.info("try using absolute path")
+        log.error("data_dir provided is not correct")
+        log.info("try using absolute path")
         return None
 
     items = list(d.iterdir())
+    if len(items) == 0:
+        log.error("no items provided")
+        return None
+
+    cs = math.ceil(len(items) / cs)
 
     return [items[i : i + cs] for i in range(0, len(items), cs)]
 
@@ -112,9 +114,9 @@ def batch_process(data: list[list[Path]]) -> None:
             processing chunk mapped directly to a hardware thread execution line.
     """
     if not data:
-        logger.warning("no data batches provided")
+        logger.error("no data batches provided")
         return
-    
+
     num_threads = len(data)
 
     total_files = sum(len(batch) for batch in data)
